@@ -379,39 +379,71 @@ All tests passed against live `QIWS/QCUSTCDT` data on the IBM i system.
 
 ---
 
-## 6. Further Deployment Ideas
+## 6. Further Deployment Ideas, Extensions, and Business Value
 
-### 6.1 Automated DFU-to-RPG Conversion Tooling
+### 6.1 Automated DFU-to-RPG Conversion Tooling ★ Highest Value
 
-The pattern demonstrated here — inspect DFU via 5250, generate DSPF + RPG — can be
-automated.  A Bob skill or MCP tool could:
+IBM i shops commonly have **hundreds of DFU programs**.  The pattern proved here is
+fully repeatable:
 
-1. Call `STRDFU OPTION(3)` (display mode) via MCP 5250 and scrape field positions
-2. Emit a DSPF skeleton and RPG skeleton from a template
-3. Leave business-logic gaps for a developer to fill
-
-### 6.2 Web UI via IBM i Access APIs
-
-The RPG program exposes the same data as the DFU.  Adding an HTTP handler (ILE RPG +
-`QZHBCGI` or Open Source Node.js on IBM i) would surface the same CRUD operations as a
-REST API with zero schema changes.
-
-### 6.3 CI/CD Integration with Bob Agent
-
-The entire compile-test cycle demonstrated here (edit → scp → CPYFRMSTMF → CRTBNDRPG →
-CALL → get_screen verify) can be encoded as a Bob workflow and triggered from a Git push
-hook, giving IBM i shops a modern CI/CD loop with no new infrastructure.
-
-### 6.4 Db2 for i Modernization
-
-Now that the data access is in source-controlled RPG, adding SQL access is trivial:
-
-```rpg
-     FQCUSTCDT  UF A E             DISK    USROPN INFDS(dbfds)
+```
+STRDFU OPTION(3) → get_screen(json) → generate DSPF+RPG skeleton → CRTDSPF+CRTBNDRPG → test
 ```
 
-can be augmented with embedded SQL (`EXEC SQL UPDATE QIWS/QCUSTCDT SET ...`) to take
-advantage of Db2 for i features such as row-level security, triggers, and journaling.
+A Bob skill (or standalone MCP tool) wrapping this loop could:
+1. Accept a DFU program name as input
+2. Invoke `STRDFU OPTION(3)` via MCP 5250 and capture all field positions in one pass
+3. Emit a compilable DSPF + RPG skeleton from a Jinja/Handlebars template
+4. Compile, run a smoke test via `CALL`, and report pass/fail — all unattended
+
+**Business value:** A shop with 300 DFU programs could migrate them in days rather than
+years, with full source control and zero behavioral regression.
+
+### 6.2 Web UI / REST API Layer
+
+Now that CRUD logic is in source-controlled RPG, adding an HTTP interface requires no
+data-layer changes:
+
+- **Short term:** ILE RPG + `QZHBCGI` CGI handler exposes the same operations as a
+  simple web form — replacing the green screen without changing any business logic.
+- **Medium term:** Open Source Node.js or Python on IBM i wraps the RPG via `QCMDEXC`
+  or Db2 SQL, delivering a REST JSON API consumable by modern front-ends.
+- **Long term:** IBM Host Access Transformation Services (HATS) or Profound UI can
+  further modernize the 5250 screen to a responsive web UI with minimal code changes.
+
+### 6.3 CI/CD Pipeline Integration
+
+The compile-test loop demonstrated in this project maps directly to a CI/CD pipeline:
+
+```
+git push → webhook → Bob agent → scp+CPYFRMSTMF → CRTBNDRPG → CALL+get_screen assert → pass/fail
+```
+
+This gives IBM i RPG the same DevOps practices (automated build, automated test,
+pull-request gate) enjoyed by Java or Node.js projects — with no new IBM i infrastructure.
+
+### 6.4 Db2 for i / SQL Modernization
+
+With data access encapsulated in RPG source, the upgrade path to SQL is a one-file
+change:
+
+- Replace physical file I/O with `EXEC SQL SELECT / UPDATE / INSERT / DELETE`
+- Gain row-level security, triggers, referential integrity, and journaling
+- Enable Db2 Web Query / ACS Run SQL Scripts reporting on the same table
+
+### 6.5 Broader IBM i Modernization Pattern
+
+The DFU case is one instance of a wider class of **"no-source legacy objects"** on IBM i:
+
+| Legacy object | Same Bob approach applies? |
+|---|---|
+| DFU programs | ✅ Demonstrated in this project |
+| Interactive RPG (fixed-format, no source) | ✅ MCP 5250 inspection + RPG checker |
+| Query/400 reports | ✅ Inspect output, generate SQL or RPG equivalent |
+| Old COBOL/CL with no maintainer | ✅ Bob agent can read, refactor, document |
+
+**The toolchain built here — MCP 5250 + ilerpg_code_checker + Bob agent reasoning —
+is a general-purpose IBM i modernization platform**, not a single-use DFU tool.
 
 ---
 
