@@ -1,7 +1,7 @@
 # DFU to ILE RPG + DSPF Migration
 ## IBM TechXchange 2026 Pre-conference Dev Day Hackathon — Submission Report
 
-**Team / Author:** E00522 (CJCDEV)  
+**Team / Author:** GuriCat
 **Submission Date:** 2026-08-29  
 **Deadline:** 2026-08-30 10:00 AM ET  
 
@@ -195,6 +195,115 @@ The audit report spool output matches the DFU reference format:
 
 ---
 
+## 3.5 Side-by-Side Comparison: Original DFU vs. TDSTRPGLE
+
+### Screen Layout
+
+Both screens were captured via MCP 5250 `get_screen` during live sessions on the IBM i system.
+
+**Original DFU (`GURILIB/TESTDFU`)**
+
+```
+ TESTDFU                                        Change
+ Format  . . . . :   CUSREC        File  . . :   QCUSTCDT
+
+*RECNBR:        0
+
+Number  Last Name Initial
+------  --------- -------
+ 938472  HENNING     G K
+
+Street        City   State Zip   Code
+------------- ------ ----- --------
+ 4859 ELM AVE  DALLAS  TX    75217
+
+Credit Limit Assessment Code  Balance   Accounts Receivable
+------------ ---------------  --------- -------------------
+    5,000           3            37.00            .00
+
+
+
+
+ F3=終了  F5=最新表示  F9=挿入  F10=入力  F11=変更  F14=前進  F23=削除
+```
+
+**Replacement (`GURILIB/TDSTRPGLE`)**
+
+```
+ TESTDFU                                        Change
+ Format  . . . . :   CUSREC        File  . . :   QCUSTCDT
+
+*RECNBR:
+
+Number  Last Name Initial
+------  --------- -------
+ 938472  HENNING     G K
+
+Street        City   State Zip   Code
+------------- ------ ----- --------
+ 4859 ELM AVE  DALLAS  TX    75217
+
+Credit Limit Assessment Code  Balance   Accounts Receivable
+------------ ---------------  --------- -------------------
+    5,000           3            37.00            .00
+
+
+
+
+ F3=Exit  F5=Refresh  F9=Insert F10=Input  F11=Change  F14=Advance  F23=Delete
+```
+
+**Differences noted:**
+
+| Item | Original DFU | TDSTRPGLE | Impact |
+|---|---|---|---|
+| Function key labels (row 23) | Japanese (`F3=終了` etc.) | English (`F3=Exit` etc.) | Cosmetic only |
+| `*RECNBR` initial value | Shows `0` | Blank | Both accept numeric RRN input |
+| Screen title row 1 | `TESTDFU` + mode | `TESTDFU` + mode | Identical |
+| All data fields | Identical layout | Identical layout | ✅ Exact match |
+| Field positions | Identical | Identical | ✅ Exact match |
+
+### Audit Report
+
+**Original DFU (`GURILIB/TESTDFU`) — from reference spool**
+
+```
+  5770SS1     V7R5M0  220415          監査ログ          26/08/08   12:58:22  ページ   1
+    プログラム/ライブラリー . . . .   DFUX/WIDEP2
+   メンバー . . . . . .   WIDEP2
+   ジョブ・タイトル . .   WIDE02
+                      0  レコードが追加された
+                      0  レコードが変更された
+                      0  レコードが削除された
+                         * * * * * D F U 監　査　報　告　書　の 終　わ　り * * * * *
+```
+
+**Replacement (`GURILIB/TDSTRPGLE`) — actual spool output**
+
+```
+ 5770WDS  V7R5M0  220415    Audit Log         26/08/29   17:52:24  Page    1
+   Program/Library . . . .   GURILIB/TDSTRPGLE
+   Member  . . . . . . . .   QCUSTCDT
+   Job Title . . . . . . .   TESTDFU
+                    1  records added
+                    0  records changed
+                    1  records deleted
+              * * * * * D F U  A u d i t  R e p o r t  E n d * * * * *
+```
+
+**Differences noted:**
+
+| Item | Original DFU | TDSTRPGLE | Impact |
+|---|---|---|---|
+| Language | Japanese | English | Intentional (hackathon convention) |
+| OS version header | `5770SS1` | `5770WDS` | Different product code (RPG compiler vs OS) |
+| Program name | Original DFU program | `GURILIB/TDSTRPGLE` | Correctly identifies replacement |
+| Footer | Japanese spaced characters | English spaced characters | Cosmetic only |
+| Count lines format | Right-justified in col ~22 | Right-justified in col ~22 | ✅ Identical layout |
+| Structure (header/counts/footer) | 3-section | 3-section | ✅ Identical structure |
+
+---
+
 ## 4. IBM Bob 2.0 and Premium Package for i — Usage
 
 This project was developed entirely within an IBM Bob 2.0 agent session.  The following
@@ -202,7 +311,7 @@ capabilities were used at each stage:
 
 ### 4.1 MCP 5250 — Live Screen Inspection
 
-The `ibm5250` MCP server provided a live 5250 terminal session to `CJCDEV (192.168.1.191)`.
+The `ibm5250` MCP server provided a live 5250 terminal session to the IBM i system.
 
 **During analysis:**
 - `get_screen(format='json')` was used to extract exact field positions (row/col as
@@ -252,7 +361,7 @@ members with `CPYFRMSTMF ... STMFCCSID(1208)` (UTF-8 → CCSID 37 auto-conversio
 
 ## 5. Test Results
 
-All tests passed on `CJCDEV` against live `QIWS/QCUSTCDT` data.
+All tests passed against live `QIWS/QCUSTCDT` data on the IBM i system.
 
 | Test | Operation | Result |
 |---|---|---|

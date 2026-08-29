@@ -147,7 +147,7 @@ verified via MCP 5250 live inspection.
 
 **Relevant Context**
 - Reference: `reference/EFADSPF.dspf` — template DSPF with INDARA, indicator usage pattern
-- DFU screen layout verified via `get_screen format=json` on session `192.168.1.191-23-mcp5251`
+- DFU screen layout verified via `get_screen format=json` on MCP 5250 session
 - Field positions from MCP JSON: row/col are attribute-byte positions (data = col+1)
 - Use `INDARA` so all indicators are managed via a DS in RPG
 - Protection indicator: IN61 = ON → fields become DSPATR(PR) + DSPATR(RI) for delete confirm
@@ -313,7 +313,7 @@ and verify behavioral equivalence with the original DFU.
 
 **Relevant Context**
 - Use `mcp__ibm5250__send_text` / `send_key` / `get_screen` tools
-- Session: `192.168.1.191-23-mcp5251` (reconnect if dropped)
+- Session: MCP 5250 session (reconnect if dropped)
 - Test data in `QIWS/QCUSTCDT` must not be permanently corrupted — note record values before test
 
 ---
