@@ -1,86 +1,90 @@
-<div align="center">
-  <img src="bob.png" alt="IBM Bob" width="200"/>
-  
-  # bob-demo
-  
-  A playground of fun, bite-sized IBM Bob demos. Because learning works better when you push it.
-</div>
+# DFU to ILE RPG + DSPF Migration
 
-## 🎯 Repository Purpose
-
-This repository showcases practical demonstrations of IBM Bob's capabilities across various use cases. Each demo is self-contained, well-documented, and designed to help you understand how to effectively work with Bob on real-world tasks.
-
-Whether you're new to IBM Bob or looking to explore advanced features, these demos provide hands-on examples you can learn from and adapt to your own projects.
-
-## 🤖 List of Demos
-
-We recommend you to create a branch before starting using Bob with this repository, so in case of an error, ro to repeat the demo, you can always get back to the `main` branch.
-
-### ♾️ DevOps
-
-* [Ansible-DevOps](ansible-devops): A demo to show how Bob can generate Ansible manifests to install and configure an HTTP Server.
-* [Tekton-DevOps](tekton-devops): A demo to show how Bob can generate Tekton manifests using `AGENTS.md` file.
-
-### 🛰️ Modernization
-
-* [Modernize EJBs To Quarkus](modernize-ejb-to-quarkus): A demo to show how to modernize an application developed with EJBs to Quarkus.
-
-### 🤝 Knowledge Transfer
-
-* [Automated Architecture Tests](automated-architecture-taikai): A demo to show how to generate architecture documents and tests for legacy applications.
-* [Grounded Docs](indexing-documentation): A demo to show how to add context to IBM Bob by indexing documentation of internal projects.
-
-### 🧠 AI Integration
-
-* [Quarkus-Ai-Integration](quarkus-ai-integration): A demo to show how you can integrate a Quarkus application with AI.
-
-* [Legacy-To-MCP](legacy-to-mcp): A demo to show how to expose a legacy application through an MCP Server.
-
-### 🛠️ Development Tools
-
-* [Beads Integration](beads): Setting up Beads issue tracking for use with IBM Bob.
-
-### 👷‍♂️ IBM Bob
-
-* [IBM Bob Modes](bob-modes): Shows how to create and configure a Bob Mode with one MCP server and one Rule.
-* [Getting Started with Skills](getting-started-skills): Shows how to get started with Skills in Bob.
-* [Using Java with Skills](using-java-skills): Shows how to use Java in Skills with Bob.
-
-## 📁 Demo Structure
-
-Every demo in this repository follows a consistent four-folder structure. Check the [demo-template/](demo-template/) folder for more details.
-
-
-## 🚀 Getting Started
-
-Clone the repository and navigate to the desired demo folder. Follow the instructions in the `README.md` file to set up and run the demo.
-
-        git clone https://github.com/IBM/bob-demo.git
-
-## 🤝 Contributing
-
-Want to add your own demo? Great! Follow the [CONTRIBUTING.md](CONTRIBUTING.md) guidelines to get started.
-
-## 💬 Ask a Question
-
-Contact the team via the [discussion forum](https://github.com/IBM/bob-demo/discussions) and propose a new demo or discuss your suggested feature.
-
-## For More Content Take a look at the Bob YT channel!
-
-[https://www.youtube.com/@ibm-bob](https://www.youtube.com/@ibm-bob)
-
-## 💡 Tips for Working with Bob
-
-- **Choose the right mode:** Code, Plan, Ask, Advanced, or Orchestrator - each has its strengths
-- **Be specific:** Clear, detailed prompts yield better results
-- **Iterate:** Don't expect perfection on the first try - refine as needed
-- **Document everything:** Capture your process for others to learn from
-- **Share challenges:** Failed attempts are valuable learning opportunities
-
-## 📄 License
-
-See [LICENSE](LICENSE) file for details.
+**IBM TechXchange 2026 Pre-conference Dev Day Hackathon**  
+Team/Author: GuriCat | Submission deadline: 2026-08-30 10:00 AM ET
 
 ---
 
-*Learn more about [IBM Bob](https://ibm.com/bob)*
+## What This Project Does
+
+Replaces `GURILIB/TESTDFU` — a legacy DFU (Data File Utility) program — with a
+functionally equivalent ILE RPG + DSPF application, compiled to `GURILIB`,
+operating on `QIWS/QCUSTCDT` without changing the data file or the original DFU.
+
+The original DFU is **untouched**. Both programs can be called independently.
+
+## Repository Contents
+
+| File | Description |
+|---|---|
+| `TDSTRPGLE_v7.rpgle` | Final ILE RPG source (column-limited free-form, no `**FREE`) |
+| `tdstdspf.dspf` | DSPF source — 5250 display file matching DFU screen layout |
+| `tdstprtr.prtf` | PRTF source — audit report matching DFU spool format |
+| `submission-report.md` | Full hackathon submission report with architecture diagrams |
+| `dfu-to-rpgle-plan.md` | Project plan with implementation results |
+| `demo-script.md` | Demo video narration script |
+
+## How to Call the Replacement
+
+```
+CALL GURILIB/TDSTRPGLE
+```
+
+Identical call syntax to the original DFU. All CRUD operations (Change, Input,
+Insert, Delete) and F-key behavior are preserved.
+
+## Architecture
+
+```
+User (5250) ──CALL──► GURILIB/TDSTRPGLE (ILE RPG)
+                          │
+                          ├──EXFMT──► GURILIB/TDSTDSPF  (DSPF)
+                          ├──I/O───► QIWS/QCUSTCDT     (non-keyed PF)
+                          └──WRITE──► GURILIB/TDSTPRTR  (PRTF audit)
+
+GURILIB/TESTDFU  ←── reference only, never called, untouched
+```
+
+## Test Results
+
+All 9 test cases pass against live `QIWS/QCUSTCDT` data:
+
+| # | Test | Result |
+|---|---|---|
+| T1 | Initial display (RRN=1) | ✅ Pass |
+| T2 | F14 Advance to next record | ✅ Pass |
+| T3 | `*RECNBR` direct RRN navigation | ✅ Pass |
+| T4 | Change mode — update field | ✅ Pass |
+| T5 | F5 Refresh | ✅ Pass |
+| T6 | F9 Insert — add record | ✅ Pass |
+| T7 | F23 Delete — confirm | ✅ Pass |
+| T8 | F23 Delete — cancel | ✅ Pass |
+| T9 | F3 Exit + audit report | ✅ Pass |
+
+**Compile status:** `CRTBNDRPG` — maximum severity **00**.
+
+## Key Technical Findings
+
+- `QIWS/QCUSTCDT` is **non-keyed** — navigation is by RRN only (matches DFU `*RECNBR` behavior)
+- Current RRN is captured from `INFDS` offset 397–400 (`dbfRRN 4I 0`)
+- `INDDS(ws)` DS requires `QUALIFIED` keyword — without it, all `wsXX` references fail with `RNF7030`
+- Column-limited free-form RPG (`/free` ... `/end-free` style, no `**FREE`) used throughout
+
+## Tools Used
+
+This project was developed entirely within an **IBM Bob 2.0** agent session using:
+
+- **MCP 5250** (`ibm5250`) — live 5250 terminal: DFU inspection, compile, test
+- **ILE RPG Code Checker** (`ilerpg_code_checker`) — local pre-upload validation
+- **Bob agent reasoning** — root-cause analysis of each compiler error batch, iterative fix
+
+See [`submission-report.md`](submission-report.md) for the full development narrative,
+architecture diagrams, and effort comparison (Bob automated vs. manual: 3 min vs. 60 min).
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+---
+
+*Hackathon submission — IBM TechXchange 2026 Pre-conference Dev Day*
