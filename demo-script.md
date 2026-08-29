@@ -11,7 +11,7 @@ DFU to ILE RPG Migration — Demo Video Script
 
 **Action:** Enter user ID and password to sign on.
 
-**Point to note:** The sign-on screen shows system name `CJCDEV` and subsystem `QINTER`. This is the IBM i development environment used for this project.
+**Point to note:** The sign-on screen shows the subsystem `QINTER` on the IBM i development environment used for this project.
 
 **Confirm:** The Command Entry screen appears — sign-on is complete.
 

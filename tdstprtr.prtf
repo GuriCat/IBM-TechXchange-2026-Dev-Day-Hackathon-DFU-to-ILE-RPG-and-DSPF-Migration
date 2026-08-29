@@ -1,56 +1,55 @@
-      A* ============================================================
-      A* TDSTPRTR - Printer File for TDSTRPGLE Audit Report
-      A* Library : GURILIB  Source : QDDSSRC  Member : TDSTPRTR
-      A* Reproduces DFU audit report format (132 cols, spacing 1)
-      A* ============================================================
-      A                                      PAGESIZE(66 132)
-      A* ============================================================
-      A* HDR - Page header line (skips to top of page)
-      A*   Col  3 : OS version string (fixed literal)
-      A*   Col 40 : 'Audit Log'
-      A*   Col 50 : Date yy/mm/dd (6A, RPG-formatted)
-      A*   Col 59 : Time hh:mm:ss (8A, RPG-formatted)
-      A*   Col 68 : 'Page'
-      A*   Col 75 : page number right-justified (4Y0, EDTCDE 4)
-      A* ============================================================
-      A          R HDR
-      A                                      SKIPA(1)
-      A                                  1  3'5770SS1  V7R5M0  220415'
-      A                                  1 40'Audit Log'
-      A            HDRDAT         6A  O  1 50
-      A            HDRTIM         8A  O  1 59
-      A                                  1 68'Page'
-      A            HDRPAG         4Y 0O  1 75EDTCDE(4)
-      A* ============================================================
-      A* PGM - Program/Library line
-      A* ============================================================
-      A          R PGM
-      A                                      SPACEB(1)
-      A                                  1  4'Program/Library . . . .   GURILIB/TDSTRPGLE'
-      A* ============================================================
-      A* MBR - Member line
-      A* ============================================================
-      A          R MBR
-      A                                      SPACEB(1)
-      A                                  1  4'Member  . . . . . .   QCUSTCDT'
-      A* ============================================================
-      A* JOB - Job title line
-      A* ============================================================
-      A          R JOB
-      A                                      SPACEB(1)
-      A                                  1  4'Job Title . . . .   TESTDFU'
-      A* ============================================================
-      A* CNTLIN - Count line (reused for add / change / delete)
-      A*   Col 16 : right-justified count (5P0, EDTCDE 1)
-      A*   Col 23 : label text (30A, set by RPG before each WRITE)
-      A* ============================================================
-      A          R CNTLIN
-      A                                      SPACEB(1)
-      A            CNTVAL         5P 0O  1 16EDTCDE(1)
-      A            CNTTXT        30A  O  1 23
-      A* ============================================================
-      A* FOOTER - End-of-report trailer (2 blank lines before)
-      A* ============================================================
-      A          R FOOTER
-      A                                      SPACEB(2)
-      A                                  1 20'* * * * * D F U  A U D I T  R E P O R T  E N D * * * * *'
+     A* ============================================================
+     A* TDSTPRTR - Printer File for TDSTRPGLE Audit Report
+     A* Library : GURILIB  Source : QDDSSRC  Member : TDSTPRTR
+     A* Reproduces DFU audit report format (132 cols, spacing 1)
+     A* ============================================================
+     A* HDR - Page header line (skips to top of page)
+     A*   Pos  3: OS version string
+     A*   Pos 40: Audit Log label
+     A*   Pos 50: HDRDAT 6A (yy/mm/dd)
+     A*   Pos 59: HDRTIM 8A (hh:mm:ss)
+     A*   Pos 68: Page label
+     A*   Pos 75: HDRPAG 4S0 right-justified
+     A* ============================================================
+     A          R HDR
+     A                                      SKIPA(1)
+     A                                     3'5770SS1  V7R5M0  220415'
+     A                                    40'Audit Log'
+     A            HDRDAT         6A  O    50
+     A            HDRTIM         8A  O    59
+     A                                    68'Page'
+     A            HDRPAG         4S 0O    75EDTCDE(4)
+     A* ============================================================
+     A* PGM - Program/Library line
+     A* ============================================================
+     A          R PGM
+     A                                      SPACEB(1)
+     A                                     4'Pgm/Lib . . GURILIB/TDSTRPGLE'
+     A* ============================================================
+     A* MBR - Member line
+     A* ============================================================
+     A          R MBR
+     A                                      SPACEB(1)
+     A                                     4'Member . . . . QCUSTCDT'
+     A* ============================================================
+     A* JOB - Job title line
+     A* ============================================================
+     A          R JOB
+     A                                      SPACEB(1)
+     A                                     4'Job Title . . TESTDFU'
+     A* ============================================================
+     A* CNTLIN - Count line (reused for add / change / delete)
+     A*   Pos 16: CNTVAL 5S0 right-justified EDTCDE(1)
+     A*   Pos 23: CNTTXT 30A label
+     A* ============================================================
+     A          R CNTLIN
+     A                                      SPACEB(1)
+     A            CNTVAL         5S 0O    16EDTCDE(1)
+     A            CNTTXT        30A  O    23
+     A* ============================================================
+     A* FOOTER - End-of-report trailer (2 blank lines before)
+     A* ============================================================
+     A          R FOOTER
+     A                                      SPACEB(2)
+     A                                     5'* * * DFU AUDIT REPORT END * * *'
+

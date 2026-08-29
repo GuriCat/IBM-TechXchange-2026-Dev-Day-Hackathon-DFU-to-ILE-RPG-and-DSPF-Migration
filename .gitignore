@@ -192,3 +192,12 @@ reference/
 .bob/
 # Temporary work files
 _upload_compile.sh
+
+# Local backups of pre-edit artefacts (not part of the submission)
+backup/
+
+# Demo media -- distributed with the submission, not tracked in git
+*.mp4
+*.mp3
+*.srt
+video/
