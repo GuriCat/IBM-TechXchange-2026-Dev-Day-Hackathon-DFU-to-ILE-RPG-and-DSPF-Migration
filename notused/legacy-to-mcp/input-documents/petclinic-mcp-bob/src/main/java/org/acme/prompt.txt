@@ -1,5 +1,0 @@
-Can you generate a Quarkus Rest Client that connects to a REST API following the @https://raw.githubusercontent.com/spring-petclinic/spring-petclinic-rest/refs/heads/master/src/main/resources/openapi.yml spec. Only implement the reading operations of pets
-
-Create an MCP Server that provides toolings for the rest client interface.
-
-The Kubernetes manifest to deploy the petclinic application is placed at src/main/kubernetes folder. Modify the manifest to add as a sidecar container the petclinic mcp server
