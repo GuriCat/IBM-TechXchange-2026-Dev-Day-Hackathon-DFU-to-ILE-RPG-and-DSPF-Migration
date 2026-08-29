@@ -235,6 +235,8 @@
        MSGDTA         = *BLANKS;
        MSGDTB         = *BLANKS;
        IF ws.del_23;
+         CHAIN(E) wkRRN CUSREC;
+         EXSR #DBEX;
          DELETE(E) CUSREC;
          IF %ERROR;
            ws.errorMsg_50  = *ON;
