@@ -1,0 +1,125 @@
+     A* ============================================================
+     A* TDSTDSPF - Display File for TESTDFU Replacement
+     A* Library: GURILIB   Source: QDDSSRC   Member: TDSTDSPF
+     A* Reproduces DFU GURILIB/TESTDFU row-based screen layout
+     A* ============================================================
+     A                                      INDARA
+     A* ============================================================
+     A* Record format MAINR - Main data entry screen
+     A* ============================================================
+     A          R MAINR
+     A                                      CA03(03 'Exit')
+     A                                      CF05(05 'Refresh')
+     A                                      CF09(09 'Insert')
+     A                                      CF10(10 'Input')
+     A                                      CF11(11 'Change')
+     A                                      CF14(14 'Advance')
+     A                                      CA23(23 'Delete')
+     A                                      CHANGE(30 'Change detect')
+     A* --- Row 1: Program title + mode indicator ---
+     A                                  1  2'TESTDFU'
+     A            CURMODE        7A  O  1 49COLOR(WHT)
+     A* --- Row 2: Format + File labels ---
+     A                                  2  2'Format  . . . . :   CUSREC'
+     A                                  2 36'File  . . :   QCUSTCDT'
+     A* --- Row 4: *RECNBR input field ---
+     A                                  4  1'*RECNBR:'
+     A            RECNBR         6Y 0B  4 10EDTCDE(4)
+     A                                      CHECK(RB)
+     A* --- Row 6: Column headers group 1 ---
+     A                                  6  1'Number  Last Name Initial'
+     A* --- Row 7: Underlines group 1 ---
+     A                                  7  1'------  --------- -------'
+     A* --- Row 8: Fields group 1 ---
+     A  60        CUSNUM         6Y 0B  8  2EDTCDE(4)
+     A  60        LSTNAM         8A  B  8 10
+     A  61                                  DSPATR(PR)
+     A  61                                  DSPATR(RI)
+     A  60        INIT           3A  B  8 22
+     A  61                                  DSPATR(PR)
+     A  61                                  DSPATR(RI)
+     A* --- Row 10: Column headers group 2 ---
+     A                                 10  1'Street        City   State Zip -
+     A                                        Code'
+     A* --- Row 11: Underlines group 2 ---
+     A                                 11  1'------------- ------ ----- ----+
+     A                                        ----'
+     A* --- Row 12: Fields group 2 ---
+     A  60        STREET        13A  B 12  2
+     A  61                                  DSPATR(PR)
+     A  61                                  DSPATR(RI)
+     A  60        CITY           6A  B 12 16
+     A  61                                  DSPATR(PR)
+     A  61                                  DSPATR(RI)
+     A  60        STATE          2A  B 12 24
+     A  61                                  DSPATR(PR)
+     A  61                                  DSPATR(RI)
+     A  60        ZIPCOD         5Y 0B 12 30EDTCDE(4)
+     A  61                                  DSPATR(PR)
+     A  61                                  DSPATR(RI)
+     A* --- Row 14: Column headers group 3 ---
+     A                                 14  1'Credit Limit Assessment Code'
+     A                                 14 31'Balance   Accounts Receivable'
+     A* --- Row 15: Underlines group 3 ---
+     A                                 15  1'------------ ---------------'
+     A                                 15 31'--------- -------------------'
+     A* --- Row 16: Fields group 3 ---
+     A  60        CDTLMT         4Y 0B 16  5EDTCDE(1)
+     A  61                                  DSPATR(PR)
+     A  61                                  DSPATR(RI)
+     A  60        CHGCOD         1Y 0B 16 21
+     A  61                                  DSPATR(PR)
+     A  61                                  DSPATR(RI)
+     A  60        BALDUE         6Y 2B 16 31EDTCDE(1)
+     A  61                                  DSPATR(PR)
+     A  61                                  DSPATR(RI)
+     A  60        CDTDUE         6Y 2B 16 46EDTCDE(1)
+     A  61                                  DSPATR(PR)
+     A  61                                  DSPATR(RI)
+     A* --- Row 23: Function key guide ---
+     A                                 23  2'F3=Exit'
+     A                                      COLOR(BLU)
+     A                                 23 11'F5=Refresh'
+     A                                      COLOR(BLU)
+     A                                 23 23'F9=Insert'
+     A                                      COLOR(BLU)
+     A                                 23 33'F10=Input'
+     A                                      COLOR(BLU)
+     A                                 23 44'F11=Change'
+     A                                      COLOR(BLU)
+     A                                 23 56'F14=Advance'
+     A                                      COLOR(BLU)
+     A                                 23 69'F23=Delete'
+     A                                      COLOR(BLU)
+     A* --- Row 24: Message line (IN50=error RED, IN51=info GRN)
+     A  50        MSGDTA        78A  O 24  2COLOR(RED)
+     A  51        MSGDTB        78A  O 24  2COLOR(GRN)
+     A* ============================================================
+     A* Record format ENDR - End of data entry confirmation screen
+     A* ============================================================
+     A          R ENDR
+     A                                      CA03(03 'Exit')
+     A                                      CA12(12 'Cancel')
+     A* --- Row 1: Title ---
+     A                                  1 24'End of Data Entry'
+     A* --- Row 3: Section label ---
+     A                                  3  3'Records processed'
+     A* --- Row 5: Added count ---
+     A                                  5  5'Added   . . . . :'
+     A            ENDADD         5Y 0O  5 26EDTCDE(1)
+     A* --- Row 6: Changed count ---
+     A                                  6  5'Changed . . . . :'
+     A            ENDCHG         5Y 0O  6 26EDTCDE(1)
+     A* --- Row 7: Deleted count ---
+     A                                  7  5'Deleted . . . . :'
+     A            ENDDLT         5Y 0O  7 26EDTCDE(1)
+     A* --- Row 12: End data entry Y/N input ---
+     A                                 12  3'End data entry  . . . . .'
+     A            ENDYES         1A  B 12 30
+     A                                 12 33'Y=YES, N=NO'
+     A* --- Row 23: Function key guide ---
+     A                                 23  2'F3=Exit'
+     A                                      COLOR(BLU)
+     A                                 23 11'F12=Cancel'
+     A                                      COLOR(BLU)
+

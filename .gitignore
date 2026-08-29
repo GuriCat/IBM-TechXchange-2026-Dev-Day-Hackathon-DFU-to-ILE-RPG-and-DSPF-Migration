@@ -183,3 +183,11 @@ gradle-app.setting
 *.hprof
 
 # End of https://www.toptal.com/developers/gitignore/api/java,maven,intellij+all,visualstudiocode,gradle
+
+# MCP servers and reference materials -- not pushed to public repo
+ibm5250-mcp/
+ilerpg-code-checker/
+notused/ibm5250-mcp/
+notused/ilerpg-code-checker/
+reference/
+.bob/
