@@ -7,6 +7,181 @@
 
 ---
 
+## 0. Migration Architecture and Plan
+
+### Migration Workflow
+
+```mermaid
+flowchart LR
+    subgraph ANALYZE["① Analyze DFU"]
+        A1["STRDFU OPTION(3)\n→ DFU definition screens"] --> A2["get_screen JSON\n→ field positions,\ntypes, indicators"]
+        A2 --> A3["DSPFFD QCUSTCDT\n→ record format,\nkeyed or non-keyed"]
+    end
+
+    subgraph DEVELOP["② Develop Source"]
+        D1["Design DSPF\nlayout table"] --> D2["Write DSPF source\n(TDSTDSPF)"]
+        D2 --> D3["Write RPG source\n(TDSTRPGLE)"]
+        D3 --> D4["ilerpg_code_checker\n→ zero errors"]
+    end
+
+    subgraph BUILD["③ Build on IBM i"]
+        B1["scp → IFS /tmp/"] --> B2["CPYFRMSTMF\n→ source member"]
+        B2 --> B3["CRTDSPF\nCRTBNDRPG\nsev=00"]
+    end
+
+    subgraph TEST["④ Test"]
+        T1["CALL TDSTRPGLE\nvia MCP 5250"] --> T2["9 test cases\nall Pass"]
+    end
+
+    ANALYZE --> DEVELOP --> BUILD --> TEST
+```
+
+### IBM Bob 2.0 and Premium Package for i — Usage
+
+This project was developed entirely within an IBM Bob 2.0 agent session.  The following
+capabilities were used at each stage:
+
+#### MCP 5250 — Live Screen Inspection
+
+The `ibm5250` MCP server provided a live 5250 terminal session to the IBM i system.
+
+**During analysis:**
+- `get_screen(format='json')` was used to extract exact field positions (row/col as
+  attribute-byte coordinates), field types, indicator bindings, and protection attributes
+  from the running DFU program `TESTDFU`.
+- `DSPFFD FILE(QIWS/QCUSTCDT)` confirmed the record format name (`CUSREC`) and revealed
+  that the file is **non-keyed** — a critical design constraint.
+
+**During development:**
+- `send_text` / `send_key` / `EXFMT` drove the interactive compile-test cycle without
+  leaving the Bob session.
+- `CRTDSPF`, `CRTBNDRPG`, `CPYFRMSTMF`, `CPYSPLF` were all issued via MCP 5250 commands.
+- Compile errors were retrieved via `CPYSPLF FILE(TDSTRPGLE) TOFILE(*TOSTMF)` + QSH `iconv`
+  pipeline, then analyzed and fixed within the same turn.
+
+**During testing:**
+- All 9 functional test cases (Change, Refresh, RRN navigation, Update, Insert, Delete,
+  Delete-cancel, F14 Advance, End-of-session with report) were exercised via MCP 5250 and
+  results verified from `get_screen` output.
+
+#### Automated DFU Inspection by Bob — vs. Manual Effort
+
+##### How Bob Extracted the DFU Definition Automatically
+
+Bob drove `STRDFU OPTION(3)` through the MCP 5250 terminal, navigated every definition
+screen, and captured structured field data in a single agent turn — with no human
+interaction required.
+
+```mermaid
+sequenceDiagram
+    actor Human
+    participant Bob as Bob Agent<br/>(IBM Bob 2.0)
+    participant MCP as MCP 5250 Server
+    participant IBMi as IBM i (CJCDEV)
+
+    Human->>Bob: "Analyze TESTDFU and build RPG replacement"
+
+    Note over Bob,IBMi: ★ Fully automated — zero human steps below this line
+
+    Bob->>MCP: send_text("STRDFU", F4)
+    MCP->>IBMi: 5250 keystrokes
+    IBMi-->>MCP: STRDFU prompt screen
+    MCP-->>Bob: screen text
+
+    Bob->>MCP: send_text(option=3, TESTDFU/GURILIB, QCUSTCDT/QIWS, ENTER)
+    MCP->>IBMi: 5250 keystrokes
+    IBMi-->>MCP: General Info screen<br/>(screen style=4 row-based, processing=sequential)
+    MCP-->>Bob: get_screen JSON → field positions
+
+    Bob->>MCP: ENTER (through Audit Control screen)
+    IBMi-->>MCP: Record Format screen (CUSREC)
+    MCP-->>Bob: format name confirmed
+
+    Bob->>MCP: opt=2 on CUSREC → ENTER
+    IBMi-->>MCP: Field Selection screen<br/>(11 fields, types, lengths)
+    MCP-->>Bob: CUSNUM 6,0 / LSTNAM 8 / INIT 3 ...
+
+    Bob->>MCP: F14 (Definition Display)
+    IBMi-->>MCP: Data File Detail screen<br/>(start byte positions per field)
+    MCP-->>Bob: CUSNUM=1, LSTNAM=7, INIT=15, STREET=18 ...
+
+    Bob->>MCP: save=N, run=N → ENTER (exit without modifying TESTDFU)
+    IBMi-->>MCP: Command entry screen
+
+    Note over Bob: All field definitions captured.<br/>TESTDFU untouched.
+    Bob->>Human: Design table + RPG/DSPF source generated
+```
+
+##### Effort Comparison: Bob Automated vs. Manual
+
+The same information gathering done manually by an experienced IBM i developer would
+require the following steps:
+
+```mermaid
+gantt
+    title DFU Definition Extraction — Bob Automated vs. Manual
+    dateFormat  HH:mm
+    axisFormat  %H:%M
+
+    section Bob (Automated)
+    STRDFU navigate + get_screen capture  :done, bob1, 00:00, 3m
+    Field table generation from JSON      :done, bob2, after bob1, 2m
+    DSPF layout design                    :done, bob3, after bob2, 5m
+    Total Bob effort                      :crit, 00:00, 10m
+
+    section Manual (Experienced Developer)
+    Open DFU in STRDFU option 3           :man1, 00:00, 5m
+    Hand-copy field names + types         :man2, after man1, 15m
+    Note byte positions from F14 screen   :man3, after man2, 10m
+    Cross-check with DSPFFD output        :man4, after man3, 10m
+    Draw DSPF layout on paper/spreadsheet :man5, after man4, 20m
+    Total manual effort                   :crit, 00:00, 60m
+```
+
+| Activity | Bob (Automated) | Manual (Experienced Dev) | Saving |
+|---|---|---|---|
+| Navigate STRDFU screens | **~30 sec** (automated keystrokes) | ~5 min (manual navigation) | ~4.5 min |
+| Extract 11 field names, types, lengths | **~0 sec** (JSON from `get_screen`) | ~15 min (hand-copy) | ~15 min |
+| Capture start-byte positions (F14) | **~0 sec** (parsed from screen) | ~10 min (manual transcription) | ~10 min |
+| Cross-check with `DSPFFD` | **~10 sec** (one command) | ~10 min | ~10 min |
+| Design DSPF layout table | **~2 min** (generated from data) | ~20 min (spreadsheet/paper) | ~18 min |
+| **Total** | **~3 min** | **~60 min** | **~57 min (95% reduction)** |
+| Error rate | Near-zero (machine-read) | Human transcription errors likely | ✅ |
+| Reproducibility | 100% repeatable, any DFU | Requires skilled developer each time | ✅ |
+
+> **Key insight:** The `get_screen(format='json')` API returns every field's row, col,
+> length, type, and indicator binding as machine-readable structured data.  A human
+> reading the same 5250 screens must manually transcribe each value — introducing
+> transcription errors and taking 20× longer.  For a shop with **300 DFU programs**,
+> this single capability difference represents **~285 hours of saved analysis effort**.
+
+#### RPG Code Checker MCP (`ilerpg_code_checker`)
+
+Every version of `TDSTRPGLE_vN.rpgle` was validated locally with
+`check_rpg_file(checkLevel='standard')` before upload.  This caught:
+
+- Missing `QUALIFIED` keyword on the `ws` DS (root cause of all `RNF7030` errors)
+- `*OPCODE` column-position issues in D-spec
+- Column-limit violations in BEGSR/ENDSR lines
+
+#### Bob Agent — Iterative Diagnosis
+
+The Bob agent performed root-cause analysis on each compiler error batch:
+
+| Error batch | Root cause identified | Fix applied |
+|---|---|---|
+| `RNF7030` (all indicators undefined) | `ws DS` missing `QUALIFIED` | Added `QUALIFIED` |
+| `RNF7030` (`QCUSTCDTR` undefined) | Wrong record format name | `QCUSTCDTR` → `CUSREC` |
+| `RNF7075` (keyed op on non-keyed file) | `QCUSTCDT` has no key | Removed `K`, rewrote to RRN |
+| `RNF7416` (`%RRN` type mismatch) | `%RRN` returns wrong type for non-keyed file | Used `INFDS` offset 397–400 (`dbfRRN`) |
+
+#### SSH + SCP — File Transfer
+
+Local source files were transferred to the IBM i IFS via `scp`, then copied to source
+members with `CPYFRMSTMF ... STMFCCSID(1208)` (UTF-8 → CCSID 37 auto-conversion).
+
+---
+
 ## 1. Problem Statement
 
 IBM i shops have accumulated hundreds — sometimes thousands — of DFU (Data File Utility)
@@ -388,192 +563,9 @@ Credit Limit Assessment Code  Balance   Accounts Receivable
 
 ---
 
----
-
-## 3.6 Migration Workflow
-
-```mermaid
-flowchart LR
-    subgraph ANALYZE["① Analyze DFU"]
-        A1["STRDFU OPTION(3)\n→ DFU definition screens"] --> A2["get_screen JSON\n→ field positions,\ntypes, indicators"]
-        A2 --> A3["DSPFFD QCUSTCDT\n→ record format,\nkeyed or non-keyed"]
-    end
-
-    subgraph DEVELOP["② Develop Source"]
-        D1["Design DSPF\nlayout table"] --> D2["Write DSPF source\n(TDSTDSPF)"]
-        D2 --> D3["Write RPG source\n(TDSTRPGLE)"]
-        D3 --> D4["ilerpg_code_checker\n→ zero errors"]
-    end
-
-    subgraph BUILD["③ Build on IBM i"]
-        B1["scp → IFS /tmp/"] --> B2["CPYFRMSTMF\n→ source member"]
-        B2 --> B3["CRTDSPF\nCRTBNDRPG\nsev=00"]
-    end
-
-    subgraph TEST["④ Test"]
-        T1["CALL TDSTRPGLE\nvia MCP 5250"] --> T2["9 test cases\nall Pass"]
-    end
-
-    ANALYZE --> DEVELOP --> BUILD --> TEST
-```
-
-## 4. IBM Bob 2.0 and Premium Package for i — Usage
-
-This project was developed entirely within an IBM Bob 2.0 agent session.  The following
-capabilities were used at each stage:
-
-### 4.1 MCP 5250 — Live Screen Inspection
-
-The `ibm5250` MCP server provided a live 5250 terminal session to the IBM i system.
-
-**During analysis:**
-- `get_screen(format='json')` was used to extract exact field positions (row/col as
-  attribute-byte coordinates), field types, indicator bindings, and protection attributes
-  from the running DFU program `TESTDFU`.
-- `DSPFFD FILE(QIWS/QCUSTCDT)` confirmed the record format name (`CUSREC`) and revealed
-  that the file is **non-keyed** — a critical design constraint.
-
-**During development:**
-- `send_text` / `send_key` / `EXFMT` drove the interactive compile-test cycle without
-  leaving the Bob session.
-- `CRTDSPF`, `CRTBNDRPG`, `CPYFRMSTMF`, `CPYSPLF` were all issued via MCP 5250 commands.
-- Compile errors were retrieved via `CPYSPLF FILE(TDSTRPGLE) TOFILE(*TOSTMF)` + QSH `iconv`
-  pipeline, then analyzed and fixed within the same turn.
-
-**During testing:**
-- All 9 functional test cases (Change, Refresh, RRN navigation, Update, Insert, Delete,
-  Delete-cancel, F14 Advance, End-of-session with report) were exercised via MCP 5250 and
-  results verified from `get_screen` output.
-
-### 4.1a Automated DFU Inspection by Bob — vs. Manual Effort
-
-#### How Bob Extracted the DFU Definition Automatically
-
-Bob drove `STRDFU OPTION(3)` through the MCP 5250 terminal, navigated every definition
-screen, and captured structured field data in a single agent turn — with no human
-interaction required.
-
-```mermaid
-sequenceDiagram
-    actor Human
-    participant Bob as Bob Agent<br/>(IBM Bob 2.0)
-    participant MCP as MCP 5250 Server
-    participant IBMi as IBM i (CJCDEV)
-
-    Human->>Bob: "Analyze TESTDFU and build RPG replacement"
-
-    Note over Bob,IBMi: ★ Fully automated — zero human steps below this line
-
-    Bob->>MCP: send_text("STRDFU", F4)
-    MCP->>IBMi: 5250 keystrokes
-    IBMi-->>MCP: STRDFU prompt screen
-    MCP-->>Bob: screen text
-
-    Bob->>MCP: send_text(option=3, TESTDFU/GURILIB, QCUSTCDT/QIWS, ENTER)
-    MCP->>IBMi: 5250 keystrokes
-    IBMi-->>MCP: General Info screen<br/>(screen style=4 row-based, processing=sequential)
-    MCP-->>Bob: get_screen JSON → field positions
-
-    Bob->>MCP: ENTER (through Audit Control screen)
-    IBMi-->>MCP: Record Format screen (CUSREC)
-    MCP-->>Bob: format name confirmed
-
-    Bob->>MCP: opt=2 on CUSREC → ENTER
-    IBMi-->>MCP: Field Selection screen<br/>(11 fields, types, lengths)
-    MCP-->>Bob: CUSNUM 6,0 / LSTNAM 8 / INIT 3 ...
-
-    Bob->>MCP: F14 (Definition Display)
-    IBMi-->>MCP: Data File Detail screen<br/>(start byte positions per field)
-    MCP-->>Bob: CUSNUM=1, LSTNAM=7, INIT=15, STREET=18 ...
-
-    Bob->>MCP: save=N, run=N → ENTER (exit without modifying TESTDFU)
-    IBMi-->>MCP: Command entry screen
-
-    Note over Bob: All field definitions captured.<br/>TESTDFU untouched.
-    Bob->>Human: Design table + RPG/DSPF source generated
-```
-
-#### Effort Comparison: Bob Automated vs. Manual
-
-The same information gathering done manually by an experienced IBM i developer would
-require the following steps:
-
-```mermaid
-gantt
-    title DFU Definition Extraction — Bob Automated vs. Manual
-    dateFormat  HH:mm
-    axisFormat  %H:%M
-
-    section Bob (Automated)
-    STRDFU navigate + get_screen capture  :done, bob1, 00:00, 3m
-    Field table generation from JSON      :done, bob2, after bob1, 2m
-    DSPF layout design                    :done, bob3, after bob2, 5m
-    Total Bob effort                      :crit, 00:00, 10m
-
-    section Manual (Experienced Developer)
-    Open DFU in STRDFU option 3           :man1, 00:00, 5m
-    Hand-copy field names + types         :man2, after man1, 15m
-    Note byte positions from F14 screen   :man3, after man2, 10m
-    Cross-check with DSPFFD output        :man4, after man3, 10m
-    Draw DSPF layout on paper/spreadsheet :man5, after man4, 20m
-    Total manual effort                   :crit, 00:00, 60m
-```
-
-| Activity | Bob (Automated) | Manual (Experienced Dev) | Saving |
-|---|---|---|---|
-| Navigate STRDFU screens | **~30 sec** (automated keystrokes) | ~5 min (manual navigation) | ~4.5 min |
-| Extract 11 field names, types, lengths | **~0 sec** (JSON from `get_screen`) | ~15 min (hand-copy) | ~15 min |
-| Capture start-byte positions (F14) | **~0 sec** (parsed from screen) | ~10 min (manual transcription) | ~10 min |
-| Cross-check with `DSPFFD` | **~10 sec** (one command) | ~10 min | ~10 min |
-| Design DSPF layout table | **~2 min** (generated from data) | ~20 min (spreadsheet/paper) | ~18 min |
-| **Total** | **~3 min** | **~60 min** | **~57 min (95% reduction)** |
-| Error rate | Near-zero (machine-read) | Human transcription errors likely | ✅ |
-| Reproducibility | 100% repeatable, any DFU | Requires skilled developer each time | ✅ |
-
-> **Key insight:** The `get_screen(format='json')` API returns every field's row, col,
-> length, type, and indicator binding as machine-readable structured data.  A human
-> reading the same 5250 screens must manually transcribe each value — introducing
-> transcription errors and taking 20× longer.  For a shop with **300 DFU programs**,
-> this single capability difference represents **~285 hours of saved analysis effort**.
-
-### 4.2 RPG Code Checker MCP (`ilerpg_code_checker`)
-
-Every version of `TDSTRPGLE_vN.rpgle` was validated locally with
-`check_rpg_file(checkLevel='standard')` before upload.  This caught:
-
-- Missing `QUALIFIED` keyword on the `ws` DS (root cause of all `RNF7030` errors)
-- `*OPCODE` column-position issues in D-spec
-- Column-limit violations in BEGSR/ENDSR lines
-
-### 4.3 Bob Agent — Iterative Diagnosis
-
-The Bob agent performed root-cause analysis on each compiler error batch:
-
-| Error batch | Root cause identified | Fix applied |
-|---|---|---|
-| `RNF7030` (all indicators undefined) | `ws DS` missing `QUALIFIED` | Added `QUALIFIED` |
-| `RNF7030` (`QCUSTCDTR` undefined) | Wrong record format name | `QCUSTCDTR` → `CUSREC` |
-| `RNF7075` (keyed op on non-keyed file) | `QCUSTCDT` has no key | Removed `K`, rewrote to RRN |
-| `RNF7416` (`%RRN` type mismatch) | `%RRN` returns wrong type for non-keyed file | Used `INFDS` offset 397–400 (`dbfRRN`) |
-
-### 4.4 SSH + SCP — File Transfer
-
-Local source files were transferred to the IBM i IFS via `scp`, then copied to source
-members with `CPYFRMSTMF ... STMFCCSID(1208)` (UTF-8 → CCSID 37 auto-conversion).
-
----
-
-## 5. Test Results
+## 4. Test Results
 
 All tests passed against live `QIWS/QCUSTCDT` data on the IBM i system.
-
-```mermaid
-xychart-beta
-    title "Test Results (9/9 Pass)"
-    x-axis ["T1 Initial\nDisplay", "T2 F14\nAdvance", "T3 RRN\nNav", "T4 Change\nUpdate", "T5 F5\nRefresh", "T6 F9\nInsert", "T7 F23\nDelete", "T8 Delete\nCancel", "T9 F3\nEnd+Report"]
-    y-axis "Result (1=Pass)" 0 --> 1
-    bar [1, 1, 1, 1, 1, 1, 1, 1, 1]
-```
 
 | Test | Operation | Result |
 |---|---|---|
@@ -591,9 +583,9 @@ xychart-beta
 
 ---
 
-## 6. Further Deployment Ideas, Extensions, and Business Value
+## 5. Further Deployment Ideas, Extensions, and Business Value
 
-### 6.1 Automated DFU-to-RPG Conversion Tooling ★ Highest Value
+### 5.1 Automated DFU-to-RPG Conversion Tooling ★ Highest Value
 
 ```mermaid
 flowchart LR
@@ -630,7 +622,7 @@ A Bob skill (or standalone MCP tool) wrapping this loop could:
 **Business value:** A shop with 300 DFU programs could migrate them in days rather than
 years, with full source control and zero behavioral regression.
 
-### 6.2 Web UI / REST API Layer
+### 5.2 Web UI / REST API Layer
 
 Now that CRUD logic is in source-controlled RPG, adding an HTTP interface requires no
 data-layer changes:
@@ -741,7 +733,7 @@ is a general-purpose IBM i modernization platform**, not a single-use DFU tool.
 
 ---
 
-## 8. Source Inventory
+## 7. Source Inventory
 
 | Location | Object | Description |
 |---|---|---|
