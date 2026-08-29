@@ -260,31 +260,6 @@ gantt
 > transcription errors and taking 20× longer.  For a shop with **300 DFU programs**,
 > this single capability difference represents **~285 hours of saved analysis effort**.
 
-#### RPG Code Checker MCP (`ilerpg_code_checker`)
-
-Every version of `TDSTRPGLE_vN.rpgle` was validated locally with
-`check_rpg_file(checkLevel='standard')` before upload.  This caught:
-
-- Missing `QUALIFIED` keyword on the `ws` DS (root cause of all `RNF7030` errors)
-- `*OPCODE` column-position issues in D-spec
-- Column-limit violations in BEGSR/ENDSR lines
-
-#### Bob Agent — Iterative Diagnosis
-
-The Bob agent performed root-cause analysis on each compiler error batch:
-
-| Error batch | Root cause identified | Fix applied |
-|---|---|---|
-| `RNF7030` (all indicators undefined) | `ws DS` missing `QUALIFIED` | Added `QUALIFIED` |
-| `RNF7030` (`QCUSTCDTR` undefined) | Wrong record format name | `QCUSTCDTR` → `CUSREC` |
-| `RNF7075` (keyed op on non-keyed file) | `QCUSTCDT` has no key | Removed `K`, rewrote to RRN |
-| `RNF7416` (`%RRN` type mismatch) | `%RRN` returns wrong type for non-keyed file | Used `INFDS` offset 397–400 (`dbfRRN`) |
-
-#### SSH + SCP — File Transfer
-
-Local source files were transferred to the IBM i IFS via `scp`, then copied to source
-members with `CPYFRMSTMF ... STMFCCSID(1208)` (UTF-8 → CCSID 37 auto-conversion).
-
 ---
 
 ## 2. Problem Statement
