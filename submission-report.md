@@ -39,24 +39,23 @@ flowchart LR
 ### IBM Bob 2.0 and Premium Package for i — Usage
 
 This project was developed entirely within an **IBM Bob 2.0** agent session.
-The **Premium Package for i** was active throughout and contributed three distinct
-capabilities — each with a concrete, traceable effect on this project:
+Three tool packages were used alongside the base Bob agent:
 
-| Premium feature | Used in this project |
-|---|---|
-| **IBM i deep knowledge** — IBM i–specific RAG and in-context expertise | Correct non-keyed RRN design, `QUALIFIED` diagnosis, EBCDIC pipeline |
-| **MCP 5250** — live 5250 terminal access from the agent | DFU inspection, compile/test cycle, 9 functional tests |
-| **ILE RPG Code Checker MCP** — offline RPG syntax validation | Pre-upload error detection; eliminated 3–5 min round-trips per fix |
+| Package | Capability used | Contribution to this project |
+|---|---|---|
+| **Premium Package for i** | IBM i–specific in-context knowledge | Correct non-keyed RRN design, `QUALIFIED` root-cause diagnosis, EBCDIC spool pipeline |
+| **ibm5250 MCP** *(separate package)* | Live 5250 terminal access | Autonomous DFU inspection, compile/test cycle, 9 functional tests — all from within Bob |
+| **ilerpg_code_checker MCP** *(separate package)* | Offline ILE RPG static analysis | Pre-upload syntax checks; eliminated 3–5 min compile round-trips per error |
 
-#### 1.1 ★ Premium Feature: IBM i Deep Knowledge
+#### 1.1 ★ Premium Package for i — IBM i Knowledge
 
-> **This capability is provided by the Premium Package for i.**  The base Bob agent has
-> general programming knowledge but does not carry IBM i–specific platform depth.
-> The Premium Package augments the agent with IBM i expertise covering RPG, DDS, CL,
-> system APIs, and IBM i–specific development patterns — delivered inline, without
-> leaving the session.
+> **The Premium Package for i** provides IBM i–specific in-context knowledge to the Bob
+> agent — covering RPG language rules, DDS syntax, CL commands, system APIs, and
+> IBM i–specific development patterns.  Without it the base Bob agent handles IBM i as a
+> generic platform, and nuanced platform constraints must be discovered through trial and
+> error.
 
-The following are concrete instances in this project where Premium IBM i knowledge
+The following are concrete instances in this project where the Premium Package knowledge
 determined the correct outcome directly:
 
 **Non-keyed file navigation — the central design decision**
@@ -102,12 +101,12 @@ indent for H/F/D specs, 7-space indent for C-specs and `BEGSR`/`ENDSR`, `/free`�
 boundaries for free-form blocks.  `**FREE` was never generated.  This constraint was
 respected without reminders across all seven source versions.
 
-#### 1.2 ★ Premium Feature: MCP 5250 — Live IBM i Terminal Access
+#### 1.2 MCP 5250 (`ibm5250`) — Live IBM i Terminal Access
 
-> **This MCP server is provided by the Premium Package for i.**  It gives the Bob agent
-> a live 5250 terminal connection to IBM i — enabling it to navigate green-screen
-> applications, run CL commands, and read screen output as structured JSON, all from
-> within the agent session.
+> **The `ibm5250` MCP server is a separate package**, independent of the Premium Package
+> for i.  It gives the Bob agent a live 5250 terminal connection to IBM i — enabling it
+> to navigate green-screen applications, run CL commands, and read screen output as
+> structured JSON, all from within the agent session.
 
 **During DFU analysis:**
 
@@ -128,11 +127,12 @@ definition screen, and captured all field data without human involvement:
 - All 9 functional tests exercised through `send_text` / `send_key` on the live terminal;
   results verified from `get_screen` output — no human needed at the screen.
 
-#### 1.3 ★ Premium Feature: ILE RPG Code Checker MCP (`ilerpg_code_checker`)
+#### 1.3 ILE RPG Code Checker MCP (`ilerpg_code_checker`)
 
-> **This MCP server is provided by the Premium Package for i.**  It performs static
-> analysis of ILE RPG source files locally — column positions, spec order, naming
-> conventions, and best-practice checks — without requiring an IBM i connection.
+> **The `ilerpg_code_checker` MCP server is a separate package**, independent of the
+> Premium Package for i.  It performs static analysis of ILE RPG source files locally —
+> column positions, spec order, naming conventions, and best-practice checks — without
+> requiring an IBM i connection.
 
 Before each upload to IBM i, Bob ran:
 
@@ -150,10 +150,11 @@ Issues caught offline before the IBM i compile cycle:
 → `CRTBNDRPG` → retrieve spool → read error → diagnose — approximately **3–5 minutes
 per cycle**.  The offline checker returned results in **under 5 seconds**.
 
-#### 1.4 Bob Agent — Iterative Root-Cause Diagnosis
+#### 1.4 Bob Agent + Premium Knowledge — Iterative Root-Cause Diagnosis
 
-Backed by the IBM i knowledge from the Premium Package, the Bob agent identified the
-root cause of each compiler error batch and produced the fix in the same turn:
+With IBM i knowledge from the Premium Package, the Bob agent identified the root cause
+of each compiler error batch and produced the fix in the same turn — no external
+documentation lookup required:
 
 | Error batch | Root cause identified | Fix applied |
 |---|---|---|
