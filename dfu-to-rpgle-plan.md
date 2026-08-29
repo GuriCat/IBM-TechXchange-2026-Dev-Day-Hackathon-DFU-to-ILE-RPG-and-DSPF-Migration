@@ -429,3 +429,156 @@ CRTBNDRPG PGM(GURILIB/TDSTRPGLE) SRCFILE(GURILIB/QRPGLESRC) SRCMBR(TDSTRPGLE) OP
 None remaining — root cause confirmed, fix path clear.
 Next action: create `TDSTRPGLE_v3.rpgle` using `**FREE` + fully-free declarations,
 upload via `scp` + `CPYFRMSTMF`, recompile.
+
+---
+
+## Implementation Results & Design Deviations (as of 2026-08-29)
+
+This section records what actually changed from the original plan, and why.
+
+---
+
+### Sub-Task Status — Final
+
+| Sub-Task | Planned Status | Actual Result |
+|---|---|---|
+| 1. DSPF (TDSTDSPF) | done | ✅ Compiled sev00. **ENDR format added** (end-of-session screen) |
+| 2. RPG (TDSTRPGLE) | in progress | ✅ Compiled sev00 — **v7 is the final version** |
+| 3. Audit Report (#PRTRPT) | done (awaiting compile) | ✅ Spool output verified. Format is English (not Japanese) |
+| 4. End-of-Session Screen (ENDR) | done | ✅ Working. ENDADD/ENDCHG/ENDDLT used (not ADDCNT/CHGCNT/DLTCNT) |
+| 5. Integration Testing | pending | ✅ 9/9 test cases Pass on live QIWS/QCUSTCDT |
+| 6. Submission Report | pending | ✅ `submission-report.md` completed with Mermaid diagrams |
+
+---
+
+### Design Changes from Plan — Detail
+
+#### 1. `**FREE` directive was NOT used (plan said: convert to `**FREE`)
+
+**Plan said:** Rewrite as `**FREE` fully-free RPG (`CTL-OPT`, `DCL-F`, `DCL-DS`, etc.)
+
+**What happened:** The plan was revised before implementation. Column-limited free-form
+(桁制限付き自由形式) was adopted as the coding standard — H/F/D specs in fixed format,
+calculations in free-form without `**FREE`. This more closely mirrors real legacy IBM i shops.
+
+**Reason:** The original `RNF0257` errors (plan's "current blocker") were caused by leading
+`//` comments before H specs — not by the spec format itself. Fix was to remove those
+leading comments, not to switch to `**FREE`. The `**FREE` conversion in the plan was an
+over-correction.
+
+**Result:** `TDSTRPGLE_v7.rpgle` uses column-limited free-form throughout. Compiled sev00.
+
+---
+
+#### 2. QCUSTCDT is non-keyed — `K` removed from F-spec, RRN navigation added
+
+**Plan said:** `FQCUSTCDT  UF A E K DISK` (keyed)
+
+**What happened:** `DSPFFD FILE(QIWS/QCUSTCDT)` revealed no key field. `K` was removed.
+All navigation rewrites to RRN-based access:
+- `READ(E) CUSREC` — sequential forward
+- `CHAIN(E) wkRRN CUSREC` — direct RRN positioning
+- `CHAIN(E) 1 CUSREC` — wrap to first on EOF
+- Current RRN captured via `INFDS` offset 397–400 (`dbfRRN 4I 0`)
+
+**Reason:** `QCUSTCDT` is a physical file with no key. `%RRN` is not usable on non-keyed
+files in column-limited free-form. `INFDS` offsets 397–400 provide the current RRN after
+every I/O operation.
+
+---
+
+#### 3. Indicator DS requires `QUALIFIED` keyword
+
+**Plan said:** `ws DS` (no `QUALIFIED`)
+
+**What happened:** Without `QUALIFIED`, references like `ws.exit_03` caused ~60 `RNF7030`
+("name undefined") errors at compile time.
+
+**Fix:** Added `QUALIFIED` to the `ws DS` declaration. This was caught by `ilerpg_code_checker`
+before upload on later versions.
+
+---
+
+#### 4. `ENDSR returnPt` — free-form syntax is valid; C-spec not needed
+
+**Plan said:** Replace free-form `ENDSR returnPt;` with C-spec `C ENDSR returnPt`
+
+**What happened:** Free-form `ENDSR returnPt;` compiles without error in column-limited
+free-form. The plan's proposed C-spec replacement was unnecessary.
+
+**Reason:** The error seen during v1/v2 was due to other structural problems (leading `//`
+comments), not the `ENDSR` syntax itself.
+
+---
+
+#### 5. DSPF ENDR format — field name collision resolved
+
+**Plan said:** Use `ADDCNT`, `CHGCNT`, `DLTCNT` as output fields in the ENDR format
+
+**What happened:** These names collide with the RPG program's counter variables of the same
+name, causing compile errors in the DSPF.
+
+**Fix:** ENDR format uses `ENDADD`, `ENDCHG`, `ENDDLT` as the display-only output fields.
+The RPG `#ENDSES` subroutine copies `ADDCNT → ENDADD`, `CHGCNT → ENDCHG`, `DLTCNT → ENDDLT`
+before `EXFMT ENDR`.
+
+---
+
+#### 6. CUSNUM field — changed from output-only (O) to input/output (B) in DSPF
+
+**Plan said:** `Row 8: CUSNUM protected (O)` — output only
+
+**What happened:** In Insert mode, CUSNUM could not be entered because it was output-only.
+
+**Fix:** Changed to `B` (input/output), conditioned by `IN61` for protected display mode.
+This allows the user to type a customer number when adding a new record.
+
+---
+
+#### 7. DELETE bug — `CHAIN` before `DELETE` required (fixed in v7)
+
+**Plan said:** (not anticipated — DELETE was assumed to work directly)
+
+**What happened:** After `EXFMT MAINR` inside `#DELREC`, the file cursor was lost. A subsequent
+`DELETE(E) CUSREC` failed with status `01221` (no current record position).
+
+**Fix (v7):** Added `CHAIN(E) wkRRN CUSREC` + `EXSR #DBEX` immediately before `DELETE(E) CUSREC`
+inside `#DELREC`. This re-positions the file cursor by RRN before the delete.
+
+---
+
+#### 8. Audit report — English format, not Japanese
+
+**Plan said:** Match DFU audit report format exactly, including Japanese text
+("レコードが追加された" etc.)
+
+**What happened:** The audit report was implemented in English ("records added",
+"records changed", "records deleted") to comply with the hackathon's English-only convention.
+The structural layout (3-section: header/counts/footer, right-justified counts at col ~22,
+132-column width) is identical to the DFU original.
+
+---
+
+#### 9. Final source version — `TDSTRPGLE_v7.rpgle`
+
+The RPG source went through 7 iterations:
+
+| Version | Key change |
+|---|---|
+| v1 | Initial fixed-format attempt; `RNF0257` on all specs (leading `//` comments) |
+| v2 | Moved comments after H specs; still broken (`RNF7030` — missing `QUALIFIED`) |
+| v3 | Added `QUALIFIED` to `ws DS`; non-keyed file handling added; record format `CUSREC` corrected |
+| v4 | RRN via `INFDS` offset 397–400; removed `K` from F-spec; `%RRN` removed |
+| v5 | ENDR format integration; ENDADD/ENDCHG/ENDDLT rename |
+| v6 | CUSNUM field changed to `B`; Insert mode fix |
+| v7 | DELETE bug fix: `CHAIN(E) wkRRN CUSREC` before `DELETE(E)` in `#DELREC` — **final, sev00** |
+
+**Final compile:** `CRTBNDRPG PGM(GURILIB/TDSTRPGLE) SRCFILE(GURILIB/QRPGLESRC) SRCMBR(TDSTRPGLE) OUTPUT(*PRINT) REPLACE(*YES)` — maximum severity **00**.
+
+---
+
+#### 10. `.gitignore` — `notused/` directory excluded
+
+Work-in-progress files (v1–v6 RPG, shell scripts, etc.) were moved to `notused/` and that
+directory was added to `.gitignore`. The public repository contains only the final deliverables.
+

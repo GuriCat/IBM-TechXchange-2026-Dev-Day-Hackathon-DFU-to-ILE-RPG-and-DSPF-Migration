@@ -187,7 +187,8 @@ gradle-app.setting
 # MCP servers and reference materials -- not pushed to public repo
 ibm5250-mcp/
 ilerpg-code-checker/
-notused/ibm5250-mcp/
-notused/ilerpg-code-checker/
+notused/
 reference/
 .bob/
+# Temporary work files
+_upload_compile.sh
