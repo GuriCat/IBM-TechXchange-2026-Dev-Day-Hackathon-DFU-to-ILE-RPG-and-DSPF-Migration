@@ -20,11 +20,12 @@ The original DFU is **untouched**. Both programs can be called independently.
 | `video/dfu-to-ile-rpg-dspf-migration-demo.mp4` | **Demo video** — 7 min, English narration and burned-in subtitles — [watch on YouTube](https://youtu.be/B6pJ_TNUvLE) |
 | `video/dfu-to-ile-rpg-dspf-migration-demo.srt` | English subtitle track for the demo video |
 | `submission-report.md` | Full hackathon submission report with architecture diagrams |
-| `TDSTRPGLE_v7.rpgle` | Final ILE RPG source (column-limited free-form, no `**FREE`) |
-| `tdstdspf.dspf` | DSPF source — 5250 display file matching DFU screen layout |
-| `tdstprtr.prtf` | PRTF source — audit report matching DFU spool format |
-| `dfu-to-rpgle-plan.md` | Project plan with implementation results |
-| `demo-script.md` | Demo video narration script |
+| `src/TDSTRPGLE_v7.rpgle` | Final ILE RPG source (column-limited free-form, no `**FREE`) |
+| `src/tdstdspf.dspf` | DSPF source — 5250 display file matching DFU screen layout |
+| `src/tdstprtr.prtf` | PRTF source — audit report matching DFU spool format |
+| `docs/dfu-to-rpgle-plan.md` | Project plan with implementation results |
+| `docs/demo-script.md` | Demo video narration script |
+| `docs/bob-session/` | Screenshots of the IBM Bob task pane during the agent session, including its end-of-session result table |
 
 All three source files are byte-identical to the members compiled into `GURILIB` on the
 IBM i system (verified 2026-08-30 by copying each member back and diffing).

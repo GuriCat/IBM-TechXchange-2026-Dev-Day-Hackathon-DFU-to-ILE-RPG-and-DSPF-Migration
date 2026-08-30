@@ -11,10 +11,10 @@
 
 | # | Required deliverable | Location |
 |---|---|---|
-| 1 | Video demonstration of the solution, including how IBM Bob was used | **YouTube: <https://youtu.be/B6pJ_TNUvLE>** · file [`video/dfu-to-ile-rpg-dspf-migration-demo.mp4`](video/dfu-to-ile-rpg-dspf-migration-demo.mp4) · audio-only [`video/dfu-to-ile-rpg-dspf-migration-demo.mp3`](video/dfu-to-ile-rpg-dspf-migration-demo.mp3) · subtitles [`video/dfu-to-ile-rpg-dspf-migration-demo.srt`](video/dfu-to-ile-rpg-dspf-migration-demo.srt) · script [`demo-script.md`](demo-script.md) |
+| 1 | Video demonstration of the solution, including how IBM Bob was used | **YouTube: <https://youtu.be/B6pJ_TNUvLE>** · file [`video/dfu-to-ile-rpg-dspf-migration-demo.mp4`](video/dfu-to-ile-rpg-dspf-migration-demo.mp4) · audio-only [`video/dfu-to-ile-rpg-dspf-migration-demo.mp3`](video/dfu-to-ile-rpg-dspf-migration-demo.mp3) · subtitles [`video/dfu-to-ile-rpg-dspf-migration-demo.srt`](video/dfu-to-ile-rpg-dspf-migration-demo.srt) · script [`docs/demo-script.md`](docs/demo-script.md) |
 | 2 | Written problem and solution statements | §1 Problem Statement · §2 Solution Overview |
 | 3 | Written statement on how IBM Bob was utilized | §4 How IBM Bob 2.0 Was Used — §4.1 is the agent's own contribution; §4.7 covers watsonx |
-| 4 | Working code repository / proof-of-concept evidence | This repository — §9 Deliverables and Source Inventory.  Source parity with the compiled objects on the live IBM i system is verified in §9.1; the task-by-task record of the Bob session is in [`dfu-to-rpgle-plan.md`](dfu-to-rpgle-plan.md), and the demo video shows the Bob task log driving every step. |
+| 4 | Working code repository / proof-of-concept evidence | This repository — §9 Deliverables and Source Inventory.  Source parity with the compiled objects on the live IBM i system is verified in §9.1; the task-by-task record of the Bob session is in [`docs/dfu-to-rpgle-plan.md`](docs/dfu-to-rpgle-plan.md), and the demo video shows the Bob task log driving every step. |
 
 ---
 
@@ -181,7 +181,7 @@ decisions, the source code and the diagnoses are Bob's:
 | Feature | How this project used it | Evidence |
 |---|---|---|
 | **Agent mode** | The migration ran as one autonomous agent session: a single instruction expanded into ~9 `STRDFU` screen navigations, a `DSPFFD` query, repeated static checks, `scp`, `CPYFRMSTMF`, `CRTDSPF`, `CRTBNDRPG`, `CPYSPLF` + `iconv`, and 9 `CALL`-driven test cases — each step chosen from the result of the previous one | §4.1; Bob's task log is on screen throughout the demo video |
-| **Plan mode** | Used before implementation to turn the goal into a task-by-task migration plan, which then carried the result of each task as it completed | [`dfu-to-rpgle-plan.md`](dfu-to-rpgle-plan.md) |
+| **Plan mode** | Used before implementation to turn the goal into a task-by-task migration plan, which then carried the result of each task as it completed | [`docs/dfu-to-rpgle-plan.md`](docs/dfu-to-rpgle-plan.md) |
 | **IBM i Developer mode** *(Premium Package for i)* | Active during the session. Bob switches modes automatically by context, so the split between this mode and the base Agent mode is not recorded — the IBM i–specific decisions it produced are documented individually in §4.2 | §4.2 |
 | **External tools via MCP** | Two MCP servers registered to the session and driven as first-class tools: `ibm5250` for the live 5250 terminal, `ilerpg_code_checker` for offline ILE RPG static analysis | `.bob/mcp.json`, quoted below |
 | **File access** | Bob authored and revised all three source members directly in the workspace, iterating until `CRTBNDRPG` reported severity 00 | `TDSTRPGLE_v7.rpgle` (7 revisions), `tdstdspf.dspf`, `tdstprtr.prtf` |
@@ -1000,13 +1000,14 @@ is a general-purpose IBM i modernization platform**, not a single-use DFU tool.
 
 | File | Description |
 |---|---|
-| [`TDSTRPGLE_v7.rpgle`](TDSTRPGLE_v7.rpgle) | Final ILE RPG source (307 lines) |
-| [`tdstdspf.dspf`](tdstdspf.dspf) | Final DSPF source (125 lines) |
-| [`tdstprtr.prtf`](tdstprtr.prtf) | Final PRTF source (55 lines) |
+| [`src/TDSTRPGLE_v7.rpgle`](src/TDSTRPGLE_v7.rpgle) | Final ILE RPG source (307 lines) |
+| [`src/tdstdspf.dspf`](src/tdstdspf.dspf) | Final DSPF source (125 lines) |
+| [`src/tdstprtr.prtf`](src/tdstprtr.prtf) | Final PRTF source (55 lines) |
 | [`submission-report.md`](submission-report.md) | This report |
-| [`dfu-to-rpgle-plan.md`](dfu-to-rpgle-plan.md) | Task-by-task working plan with per-task results |
-| [`demo-script.md`](demo-script.md) | Demo video narration script |
+| [`docs/dfu-to-rpgle-plan.md`](docs/dfu-to-rpgle-plan.md) | Task-by-task working plan with per-task results |
+| [`docs/demo-script.md`](docs/demo-script.md) | Demo video narration script |
 | [`README.md`](README.md) | Project overview |
+| [`docs/bob-session/`](docs/bob-session/) | IBM Bob task-session screenshots — 5 stills from the session recording, with a README describing each |
 
 **Distributed with the submission, not tracked in git** (media, kept out of the repository
 to avoid binary bloat)

@@ -406,7 +406,7 @@ converting:
 The C-spec `ENDSR returnPt` at the bottom of `#DBEX` (needed for INFSR return-point) is
 compatible with `**FREE` mode — mixed fixed/free is allowed in `**FREE` only at the C-spec level.
 
-**Local file:** `c:\bob-demo\TDSTRPGLE_v2.rpgle` (327 lines, passes RPG code checker)
+**Local file:** `D:\dfu-to-ile-rpg-dspf-migration\TDSTRPGLE_v2.rpgle` (327 lines, passes RPG code checker)
 **IBM i member:** `GURILIB/QRPGLESRC(TDSTRPGLE)` — currently contains the broken `_v2` source
 **Compile command used:**
 ```
