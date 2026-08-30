@@ -46,7 +46,8 @@ consequence is an ordering constraint: **the definitions must be extracted befor
 upgrade, not after it.**
 
 This project was built on IBM i 7.5, where `STRDFU OPTION(3)` still opens a DFU definition.
-The same extraction would not have been possible one release later.
+On an unpatched 7.6 system the same extraction would not
+have run at all; on a patched one it would have rested on an unsupported function.
 
 The challenge chosen for this hackathon:
 
@@ -474,11 +475,12 @@ interaction.  Rows map one-to-one onto the Gantt chart above.
 > **300 DFU programs**, this single capability difference represents
 > **~250 hours of saved analysis effort**.
 
-> **Both columns assume a release on which the DFU definition can still be opened.**  On
-> IBM i 7.6 without PTF `SJ04740`, the manual column is not slower — it is unavailable.  The
-> developer reaches the same blocked `STRDFU` option 3 that Bob does.  The comparison above
-> is therefore Bob versus a human *on IBM i 7.5*; on 7.6 neither can read the definition at
-> all, which is why the migration has to happen before the upgrade.
+> **Both columns assume a release on which the DFU definition can still be opened.**  On IBM
+> i 7.6 the option is missing until PTF `SJ04740` is applied, and a developer working by hand
+> hits exactly the same block that Bob does — the constraint is the release, not the method.
+> The comparison above is therefore Bob versus a human on IBM i 7.5.  The PTF does restore the
+> option, so the work stays possible on 7.6; what it restores is a function that left support
+> on 30 April 2025, which makes it a poor foundation for a migration schedule.
 
 ---
 
@@ -1007,8 +1009,11 @@ is a general-purpose IBM i modernization platform**, not a single-use DFU tool.
 
 - **The extraction method depends on `STRDFU OPTION(3)`.**  Phase ① captures the DFU
   definition by opening it on a live terminal, which requires menu option 3.  On IBM i 7.6
-  without PTF `SJ04740` that option is unavailable (see §1), so this workflow does not run
-  there.  `DSPFFD` still yields the physical-file field definitions, but the DFU-side screen
+  without PTF `SJ04740` that option is missing (see §1), so this workflow does not run there
+  as-is.  Applying the PTF brings it back and the workflow runs again, but it then depends on
+  a function that has been out of support since 30 April 2025 — workable, not advisable.
+  Where the option is missing, `DSPFFD` still yields the physical-file field definitions, but
+  the DFU-side screen
   layout, function-key assignments and audit-report format — everything that exists only
   inside the DFU object — cannot be recovered.  This is the practical argument for migrating
   before the release upgrade rather than after it.
