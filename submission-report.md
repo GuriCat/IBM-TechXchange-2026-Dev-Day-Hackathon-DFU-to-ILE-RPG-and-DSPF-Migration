@@ -1017,6 +1017,11 @@ is a general-purpose IBM i modernization platform**, not a single-use DFU tool.
   layout, function-key assignments and audit-report format — everything that exists only
   inside the DFU object — cannot be recovered.  This is the practical argument for migrating
   before the release upgrade rather than after it.
+- **Only the common subset of DFU function is covered.**  `TESTDFU` uses a single record
+  format, and it uses neither field duplication nor automatic numbering.  The replacement
+  implements none of those, because the original does not need them.  They are the less
+  frequently used parts of DFU, but across several hundred programs a shop will own some,
+  and each one adds conversion work that this project did not have to do.
 - **`*RECNBR` is RRN, not CUSNUM.**  The replacement preserves this DFU behavior: row-4
   input navigates by physical record position, not by customer number.  A future version
   could add an SQL `WHERE CUSNUM = :n` lookup for key-based navigation.
