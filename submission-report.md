@@ -512,6 +512,24 @@ optional and IBM Bob mandatory:
 The mandatory technology — IBM Bob — is used throughout and documented feature by feature
 in §4 above.
 
+### 4.8 Session Evidence — Screenshots
+
+Stills from the recording of the Bob session, in [`docs/bob-session/`](docs/bob-session/).
+The mode selector at the foot of the Bob pane reads **Agent** in every frame.
+
+| Screenshot | What it shows | Why it matters |
+|---|---|---|
+| [`01-agent-session-start.png`](docs/bob-session/01-agent-session-start.png) | Bob signing on to the IBM i, task pane logging `Send Text (ibm5250)` calls | The session runs in Agent mode, and the terminal is driven by the agent rather than by a person |
+| [`02-dfu-definition-capture.png`](docs/bob-session/02-dfu-definition-capture.png) | `STRDFU OPTION(3)` on `GURILIB/TESTDFU`, all 11 `CUSREC` fields on screen, `Get Screen (ibm5250)` in the task log | The definition capture that the whole migration depends on — and the exact operation that IBM i 7.6 refuses without PTF `SJ04740` (§1) |
+| [`03-replacement-insert-test.png`](docs/bob-session/03-replacement-insert-test.png) | `TDSTRPGLE` in F9 Insert with test data entered, reproduced function-key legend visible | Functional testing against live data, performed through the terminal by the agent |
+| [`04-task-session-summary.png`](docs/bob-session/04-task-session-summary.png) | The full window at the end of the session | Context for the pane below: Bob, the 5250 viewer and the workspace side by side |
+| [`05-task-session-summary-pane.png`](docs/bob-session/05-task-session-summary-pane.png) | The task pane cropped for legibility: **all tasks completed**, with a per-scene result table | Bob's own end-of-session record of what it did and how each step ended |
+
+Source recording: `video/2026-08-29 212404.mp4` (229 s, 1918x1034); frames at 8 s, 70 s,
+150 s and 224 s.
+
+---
+
 ## 5. Technical Implementation
 
 ### 5.1 QCUSTCDT File Analysis
