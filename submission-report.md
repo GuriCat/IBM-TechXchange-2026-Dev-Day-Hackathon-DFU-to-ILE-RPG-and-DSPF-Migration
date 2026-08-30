@@ -5,13 +5,13 @@
 **Submission date:** 2026-08-30
 **Deadline:** 2026-08-30 10:00 AM ET
 **Repository:** <https://github.com/GuriCat/IBM-TechXchange-2026-Dev-Day-Hackathon-DFU-to-ILE-RPG-and-DSPF-Migration>
-**Demo video:** <https://youtu.be/B6pJ_TNUvLE> — 7 min, English narration with burned-in subtitles
+**Demo video:** <https://youtu.be/T4AQcgjtKy4> — 8 min, English narration with burned-in subtitles
 
 ### Where each required deliverable is
 
 | # | Required deliverable | Location |
 |---|---|---|
-| 1 | Video demonstration of the solution, including how IBM Bob was used | **YouTube: <https://youtu.be/B6pJ_TNUvLE>** · file [`video/dfu-to-ile-rpg-dspf-migration-demo.mp4`](video/dfu-to-ile-rpg-dspf-migration-demo.mp4) · audio-only [`video/dfu-to-ile-rpg-dspf-migration-demo.mp3`](video/dfu-to-ile-rpg-dspf-migration-demo.mp3) · subtitles [`video/dfu-to-ile-rpg-dspf-migration-demo.srt`](video/dfu-to-ile-rpg-dspf-migration-demo.srt) · script [`docs/demo-script.md`](docs/demo-script.md) |
+| 1 | Video demonstration of the solution, including how IBM Bob was used | **YouTube: <https://youtu.be/T4AQcgjtKy4>** · file [`video/dfu-to-ile-rpg-dspf-migration-demo.mp4`](video/dfu-to-ile-rpg-dspf-migration-demo.mp4) · audio-only [`video/dfu-to-ile-rpg-dspf-migration-demo.mp3`](video/dfu-to-ile-rpg-dspf-migration-demo.mp3) · subtitles [`video/dfu-to-ile-rpg-dspf-migration-demo.srt`](video/dfu-to-ile-rpg-dspf-migration-demo.srt) · script [`docs/demo-script.md`](docs/demo-script.md) |
 | 2 | Written problem and solution statements | §1 Problem Statement · §2 Solution Overview |
 | 3 | Written statement on how IBM Bob was utilized | §4 How IBM Bob 2.0 Was Used — §4.1 is the agent's own contribution; §4.7 covers watsonx |
 | 4 | Working code repository / proof-of-concept evidence | This repository — §9 Deliverables and Source Inventory.  Source parity with the compiled objects on the live IBM i system is verified in §9.1; the task-by-task record of the Bob session is in [`docs/dfu-to-rpgle-plan.md`](docs/dfu-to-rpgle-plan.md), and the demo video shows the Bob task log driving every step. |
@@ -21,9 +21,26 @@
 ## 1. Problem Statement
 
 IBM i shops have accumulated hundreds — sometimes thousands — of DFU (Data File Utility)
-programs over the decades.  DFU programs are fast to create but impossible to maintain as
-source code: they produce no RPG, no DDS, and no comments.  They cannot be unit-tested,
-version-controlled, or extended.  They run in their own activation group and have no API.
+programs over the decades.  They are fast to create, and there is nothing wrong with the
+programs themselves.  The problem is getting the definition back out of one.
+
+Verified on the live 7.5 system on 2026-08-30 against `GURILIB/TESTDFU`:
+
+> A DFU program is **two objects** — a `*PGM` and a `*FILE`, both carrying attribute
+> `DFU`.  `DSPOBJD ... DETAIL(*SERVICE)` reports **no source file, library or member**
+> for either, and `DSPPGM` reports program type `OPM`.
+>
+> DFU *will* emit DDS — but only if you re-save the program.  Answering `DDS ソースの
+> 保管 = Y` with `プログラムの保管 = N` is refused: `DDS ソースを保管したい場合には，
+> プログラムを保管しなければならない。`
+>
+> And what it emits carries no names.  The generated display file is record format
+> `R B100000` with fields `B100000000` … `B100000010` in database order — lengths
+> matching `QCUSTCDT` exactly (`B100000001  6Y 0` is `CUSNUM`, `B100000002  8A` is
+> `LSTNAM`, and so on), but nothing in the source says so.
+
+So the field names, their order and their byte positions are legible in exactly one
+place: the DFU definition screens.
 
 This has always been inconvenient.  What changed is the deadline.  IBM announced the end of
 support for six ADTS components — RLU, SDA, FCMU, APF, CGU and **DFU** — in announcement

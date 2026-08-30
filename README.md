@@ -17,7 +17,7 @@ The original DFU is **untouched**. Both programs can be called independently.
 
 | File | Description |
 |---|---|
-| `video/dfu-to-ile-rpg-dspf-migration-demo.mp4` | **Demo video** — 7 min, English narration and burned-in subtitles — [watch on YouTube](https://youtu.be/B6pJ_TNUvLE) |
+| `video/dfu-to-ile-rpg-dspf-migration-demo.mp4` | **Demo video** — 8 min, English narration and burned-in subtitles — [watch on YouTube](https://youtu.be/T4AQcgjtKy4) |
 | `video/dfu-to-ile-rpg-dspf-migration-demo.srt` | English subtitle track for the demo video |
 | `submission-report.md` | Full hackathon submission report with architecture diagrams |
 | `src/TDSTRPGLE_v7.rpgle` | Final ILE RPG source (column-limited free-form, no `**FREE`) |
