@@ -25,6 +25,29 @@ programs over the decades.  DFU programs are fast to create but impossible to ma
 source code: they produce no RPG, no DDS, and no comments.  They cannot be unit-tested,
 version-controlled, or extended.  They run in their own activation group and have no API.
 
+This has always been inconvenient.  What changed is the deadline.  IBM announced the end of
+support for six ADTS components — RLU, SDA, FCMU, APF, CGU and **DFU** — in announcement
+`AD24-0477` (published 7 May 2024), effective **30 April 2025**.  For a system of record an
+unsupported component in production is not a risk to be monitored; it is a finding waiting
+for the next audit.
+
+IBM i 7.6 makes that deadline immediate.  Verified on a live 7.6 system (`V7R6M0`, PTF
+`SJ04740` not applied) on 2026-08-30:
+
+> `STRDFU` presents two menu options — *1. Run a DFU program* and *5. Update data using
+> temporary program*.  Options 2 (create), 3 (change) and 4 (delete) are absent, and issuing
+> the command directly returns `オプション 2, 3, および 4 は使用できません。` ("options 2, 3
+> and 4 are not available").
+
+Existing DFU programs keep running.  What is gone is the ability to open one and read what
+it does.  PTF `SJ04740` restores options 2–4 and some shops rely on it, but what it restores
+is a function IBM no longer supports — a reprieve rather than a commitment.  The planning
+consequence is an ordering constraint: **the definitions must be extracted before the release
+upgrade, not after it.**
+
+This project was built on IBM i 7.5, where `STRDFU OPTION(3)` still opens a DFU definition.
+The same extraction would not have been possible one release later.
+
 The challenge chosen for this hackathon:
 
 > **Replace `GURILIB/TESTDFU`** (a live DFU program operating on `QIWS/QCUSTCDT`) with a
@@ -450,6 +473,12 @@ interaction.  Rows map one-to-one onto the Gantt chart above.
 > introducing transcription errors and taking **6× longer**.  For a shop with
 > **300 DFU programs**, this single capability difference represents
 > **~250 hours of saved analysis effort**.
+
+> **Both columns assume a release on which the DFU definition can still be opened.**  On
+> IBM i 7.6 without PTF `SJ04740`, the manual column is not slower — it is unavailable.  The
+> developer reaches the same blocked `STRDFU` option 3 that Bob does.  The comparison above
+> is therefore Bob versus a human *on IBM i 7.5*; on 7.6 neither can read the definition at
+> all, which is why the migration has to happen before the upgrade.
 
 ---
 
@@ -976,6 +1005,13 @@ is a general-purpose IBM i modernization platform**, not a single-use DFU tool.
 
 ### Limitations
 
+- **The extraction method depends on `STRDFU OPTION(3)`.**  Phase ① captures the DFU
+  definition by opening it on a live terminal, which requires menu option 3.  On IBM i 7.6
+  without PTF `SJ04740` that option is unavailable (see §1), so this workflow does not run
+  there.  `DSPFFD` still yields the physical-file field definitions, but the DFU-side screen
+  layout, function-key assignments and audit-report format — everything that exists only
+  inside the DFU object — cannot be recovered.  This is the practical argument for migrating
+  before the release upgrade rather than after it.
 - **`*RECNBR` is RRN, not CUSNUM.**  The replacement preserves this DFU behavior: row-4
   input navigates by physical record position, not by customer number.  A future version
   could add an SQL `WHERE CUSNUM = :n` lookup for key-based navigation.
