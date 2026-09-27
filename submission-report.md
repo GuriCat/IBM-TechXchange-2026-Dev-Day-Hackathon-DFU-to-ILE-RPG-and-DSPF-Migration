@@ -20,7 +20,7 @@
 
 ## 1. Problem Statement
 
-IBM i shops have accumulated hundreds — sometimes thousands — of DFU (Data File Utility)
+IBM i shops have accumulated dozens — sometimes more than a hundred — DFU (Data File Utility)
 programs over the decades.  They are fast to create, and there is nothing wrong with the
 programs themselves.  The problem is getting the definition back out of one.
 
@@ -489,8 +489,8 @@ interaction.  Rows map one-to-one onto the Gantt chart above.
 > length, type, and indicator binding as machine-readable structured data in a single
 > pass.  A human reading the same 5250 screens must manually transcribe each value —
 > introducing transcription errors and taking **6× longer**.  For a shop with
-> **300 DFU programs**, this single capability difference represents
-> **~250 hours of saved analysis effort**.
+> **100 DFU programs**, this single capability difference represents
+> **~80 hours of saved analysis effort**.
 
 > **Both columns assume a release on which the DFU definition can still be opened.**  On IBM
 > i 7.6 the option is missing until PTF `SJ04740` is applied, and a developer working by hand
@@ -910,7 +910,7 @@ flowchart LR
     FUNCTEST --> OUTPUT["Output:<br/>Source-controlled<br/>RPG replacement"]
 ```
 
-IBM i shops commonly have **hundreds of DFU programs**.  The pattern proved here is
+IBM i shops commonly have **dozens — sometimes more than a hundred — DFU programs**.  The pattern proved here is
 fully repeatable:
 
 ```
@@ -923,8 +923,8 @@ A Bob skill (or standalone MCP tool) wrapping this loop could:
 3. Emit a compilable DSPF + RPG skeleton from a Jinja/Handlebars template
 4. Compile, run a functional test via `CALL`, and report pass/fail — all unattended
 
-**Business value:** A shop with 300 DFU programs could migrate them in days rather than
-years, with full source control and zero behavioral regression.
+**Business value:** A shop with 100 DFU programs could migrate them in days rather than
+months, with full source control and zero behavioral regression.
 
 ### 7.2 Web UI / REST API Layer
 
@@ -1055,7 +1055,7 @@ is a general-purpose IBM i modernization platform**, not a single-use DFU tool.
 - **Only the common subset of DFU function is covered.**  `TESTDFU` uses a single record
   format, and it uses neither field duplication nor automatic numbering.  The replacement
   implements none of those, because the original does not need them.  They are the less
-  frequently used parts of DFU, but across several hundred programs a shop will own some,
+  frequently used parts of DFU, but across a hundred programs a shop will own some,
   and each one adds conversion work that this project did not have to do.
 - **`*RECNBR` is RRN, not CUSNUM.**  The replacement preserves this DFU behavior: row-4
   input navigates by physical record position, not by customer number.  A future version
